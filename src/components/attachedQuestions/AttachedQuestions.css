@@ -1,0 +1,184 @@
+/* Common styles for Question Containers */
+.allQuestionContainer, .attachedQuestionsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px;
+  background: white;
+  margin: auto;
+  border-radius: 20px;
+  max-width: 2500px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Question Lists */
+.questionList, .attachedQuestionList {
+  max-height: 780px;
+  width: 100%;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Question Items */
+.questionItem, .attachedQuestionItem {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.questionItem:hover, .attachedQuestionItem:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Question Metadata */
+.questionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.tag {
+  background-color: #f0f0f0;
+  padding: 4px 10px;
+  border-radius: 15px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+/* Buttons */
+.deleteButton, .editButton, .addQuestionButton {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s ease;
+  margin-top: 10px;
+}
+
+.deleteButton {
+  background: linear-gradient(135deg, #ff5252, #d32f2f);
+  color: white;
+}
+
+.deleteButton:hover {
+  background: #ff0000;
+}
+
+.editButton {
+  background: linear-gradient(135deg, #2196f3, #1769aa);
+  color: white;
+  margin-right: 10px;
+}
+
+.editButton:hover {
+  background: #0b4f9a;
+}
+
+.addQuestionButton {
+  background: linear-gradient(135deg, #068ecf, #044a99);
+  color: white;
+}
+
+.addQuestionButton:hover {
+  background: #062d67;
+}
+
+/* Filter Controls */
+.filterControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #79c398;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.horizontal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  width: 100%;
+  justify-content: space-between;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+}
+
+.formGroup label {
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #333;
+}
+
+.formGroup select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: white;
+  transition: border 0.3s;
+}
+
+.formGroup select:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Set Name Input */
+.set-name-input {
+  width: 100%;
+  margin: 15px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.set-name-field {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 35%;
+  font-size: 16px;
+  transition: border 0.3s;
+}
+
+.set-name-field:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Question Stats */
+.questionStats {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Override DynamicMathSelector vertical styles when used in horizontal layout */
+.horizontal-filters .formGroup {
+  flex-direction: column;
+}

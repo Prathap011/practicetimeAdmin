@@ -1,0 +1,149 @@
+/* Beautified Question Container */
+.allQuestionContainer {
+  height: 1087px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 25px;
+  background: white;
+  margin: auto;
+  border-radius: 20px;
+  max-width: 2500px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Question List */
+.questionList {
+  max-height: 630px;
+  width: 100%;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Question Item */
+.questionItem {
+  margin-bottom: 20px;
+  padding: 18px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-left: 12px;
+}
+
+.questionItem:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Buttons */
+.deleteButton, .editButton {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s ease;
+}
+
+.deleteButton {
+  background: linear-gradient(135deg, #ff5252, #d32f2f);
+  color: white;
+}
+
+.deleteButton:hover {
+  background: #ff0000;
+}
+
+.editButton {
+  background: linear-gradient(135deg, #2196f3, #1769aa);
+  color: white;
+  margin-right: 10px;
+}
+
+.editButton:hover {
+  background: #0b4f9a;
+}
+
+/* Filter Controls */
+.filterControls {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #79c398;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+/* Horizontal Filters Container - this will override the DynamicMathSelector styles */
+.horizontal-filters {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 15px;
+  align-items: flex-start;
+}
+
+/* Override DynamicMathSelector styles to make them horizontal */
+.horizontal-filters > div {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+/* Style for each form group in the horizontal layout */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+
+.formGroup label {
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #333;
+}
+
+.formGroup select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: white;
+  transition: border 0.3s;
+}
+
+.formGroup select:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+/* Make DynamicMathSelector components display horizontally */
+.horizontal-filters .selector-container {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 15px;
+  flex-wrap: wrap;
+  width: auto !important;
+}
+
+.horizontal-filters .selector-container > div {
+  width: auto !important;
+  margin-bottom: 0 !important;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

@@ -397,9 +397,9 @@ const DynamicMathSelector = ({ grade, setGrade, topic, setTopic, topicList, setT
   const filteredTopics = MATH_DATA.topics.filter((t) => t.grade === grade);
 
   // Debugging logs
-  console.log("Grade:", grade);
-  console.log("Topic:", topic);
-  console.log("Subtopics available:", MATH_DATA.subtopics[topic]?.[grade]);
+  // console.log("Grade:", grade);
+  // console.log("Topic:", topic);
+  // console.log("Subtopics available:", MATH_DATA.subtopics[topic]?.[grade]);
 
   return (
     <div>

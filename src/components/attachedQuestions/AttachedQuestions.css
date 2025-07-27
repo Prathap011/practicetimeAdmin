@@ -11,6 +11,26 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   animation: fadeIn 0.5s ease-in-out;
 }
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border: none;
+  background-color: #eee;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.pagination button.active {
+  background-color: #1976d2;
+  color: white;
+}
+
 
 /* Question Lists */
 .questionList, .attachedQuestionList {

@@ -12,11 +12,12 @@ const AttachedQuestion = () => {
   const [selectedSetName, setSelectedSetName] = useState("");
   const [error, setError] = useState(null);
   const [setNameError, setSetNameError] = useState("");
-  // Add loading state
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false, no initial load
+  // State to track if the initial fetch attempt has been made
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
-  // Filter states - Grade initialized to "G4"
-  const [grade, setGrade] = useState("G4"); // Default to G4
+  // Filter states - Grade initialized to "all"
+  const [grade, setGrade] = useState("all");
   const [topic, setTopic] = useState("all");
   const [topicList, setTopicList] = useState("all");
   const [difficultyLevel, setDifficultyLevel] = useState("all");
@@ -26,63 +27,77 @@ const AttachedQuestion = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 50;
 
-  useEffect(() => {
-    const fetchAllQuestions = async () => {
-      // Indicate loading has started
-      setLoading(true);
-      setError(null); // Clear any previous errors
-      try {
-        const questionsRef = ref(database, "questions");
-        const snapshot = await get(questionsRef);
-        if (!snapshot.exists()) {
-          setError("No questions found!");
-          return;
-        }
-        const data = snapshot.val();
-        let allFetchedQuestions = Object.keys(data).map((questionId) => ({
-          id: questionId,
-          ...data[questionId],
-        }));
-        allFetchedQuestions.reverse();
-        setQuestions(allFetchedQuestions);
-        // Note: filteredQuestions will be updated by the filter useEffect below
-        // because 'questions' is a dependency.
-      } catch (err) {
-        console.error("Error fetching questions:", err);
-        setError("Failed to fetch questions");
-      } finally {
-        // Ensure loading is set to false when fetch completes (success or error)
-        setLoading(false);
-      }
-    };
-    fetchAllQuestions();
-  }, []); // Dependency array is empty, runs once on mount
 
-  // Apply filters when any filter value, questions, or loading state changes
+  // Helper function to determine if any filter is actively selected
+  const isAnyFilterActive = () => {
+     // Check if any filter is NOT "all" or ""
+     return (
+       (grade !== "all" && grade !== "") ||
+       (topic !== "all" && topic !== "") ||
+       (topicList !== "all" && topicList !== "") ||
+       (difficultyLevel !== "all" && difficultyLevel !== "") ||
+       (questionType !== "all" && questionType !== "")
+     );
+   };
+
+  // Function to fetch all questions
+  const fetchAllQuestions = async () => {
+    // Prevent multiple simultaneous fetches
+    if (loading) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const questionsRef = ref(database, "questions");
+      const snapshot = await get(questionsRef);
+      if (!snapshot.exists()) {
+        setError("No questions found!");
+        setQuestions([]); // Ensure questions array is cleared
+        return;
+      }
+      const data = snapshot.val();
+      let allFetchedQuestions = Object.keys(data).map((questionId) => ({
+        id: questionId,
+        ...data[questionId],
+      }));
+      allFetchedQuestions.reverse();
+      setQuestions(allFetchedQuestions);
+      // Success, mark that we've fetched
+      setHasFetchedOnce(true);
+    } catch (err) {
+      console.error("Error fetching questions:", err);
+      setError("Failed to fetch questions");
+      setQuestions([]); // Ensure questions array is cleared on error
+      setHasFetchedOnce(true); // Mark as fetched even on error to prevent retries
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Apply filters and potentially fetch data
   useEffect(() => {
-    // If still loading, don't filter yet or if questions haven't loaded
-    if (loading || questions.length === 0) {
-      // Optionally reset filtered questions while loading or waiting for data
-      // setFilteredQuestions([]);
-      return;
+    // If data hasn't been fetched yet AND at least one filter is active, fetch it
+    if (!hasFetchedOnce && questions.length === 0 && isAnyFilterActive()) {
+      fetchAllQuestions();
+      return; // Exit effect, it will re-run after fetch updates state
     }
 
-    const filtered = questions.filter((q) => {
-      // --- CORRECTED FILTER LOGIC ---
-      // Treat empty string ("") the same as "all" for filter inputs
-      const matchesGrade = grade === "all" || grade === "" || q.grade === grade;
-      const matchesTopic = topic === "all" || topic === "" || q.topic === topic;
-      const matchesTopicList = topicList === "all" || topicList === "" || q.topicList === topicList;
-      const matchesDifficulty = difficultyLevel === "all" || difficultyLevel === "" || q.difficultyLevel === difficultyLevel;
-      const matchesType = questionType === "all" || questionType === "" || q.type === questionType;
-      // --- END CORRECTION ---
-
-      // console.log(`Question ${q.id} - Grade Match: ${matchesGrade} (q.grade: ${q.grade}), Topic Match: ${matchesTopic}, ...`);
-      return matchesGrade && matchesTopic && matchesTopicList && matchesDifficulty && matchesType;
-    });
-    setFilteredQuestions(filtered);
-    setCurrentPage(1); // Reset to page 1 on new filter
-  }, [questions, grade, topic, topicList, difficultyLevel, questionType, loading]); // Dependencies
+    // If data is loaded (or intentionally empty/errored after fetch) and not loading, apply filters
+    if (hasFetchedOnce && !loading) {
+      const filtered = questions.filter((q) => {
+        // --- CORRECTED FILTER LOGIC ---
+        const matchesGrade = grade === "all" || grade === "" || q.grade === grade;
+        const matchesTopic = topic === "all" || topic === "" || q.topic === topic;
+        const matchesTopicList = topicList === "all" || topicList === "" || q.topicList === topicList;
+        const matchesDifficulty = difficultyLevel === "all" || difficultyLevel === "" || q.difficultyLevel === difficultyLevel;
+        const matchesType = questionType === "all" || questionType === "" || q.type === questionType;
+        // --- END CORRECTION ---
+        return matchesGrade && matchesTopic && matchesTopicList && matchesDifficulty && matchesType;
+      });
+      setFilteredQuestions(filtered);
+      setCurrentPage(1); // Reset to page 1 on new filter
+    }
+  }, [questions, grade, topic, topicList, difficultyLevel, questionType, loading, hasFetchedOnce]); // Dependencies
 
   const handleAddToSet = async (questionId) => {
     if (!selectedSetName.trim()) {
@@ -133,6 +148,48 @@ const AttachedQuestion = () => {
   const indexOfFirst = indexOfLast - questionsPerPage;
   const currentQuestions = filteredQuestions.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
+
+  // --- START: Truncated Pagination Logic ---
+  // Helper function for pagination truncation
+  const getVisiblePageNumbers = (currentPage, totalPages, maxVisible = 10) => {
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const halfVisible = Math.floor(maxVisible / 2);
+    let startPage = Math.max(1, currentPage - halfVisible);
+    let endPage = Math.min(totalPages, currentPage + halfVisible);
+
+    if (currentPage <= halfVisible) {
+      endPage = maxVisible;
+    }
+    if (currentPage + halfVisible >= totalPages) {
+      startPage = totalPages - maxVisible + 1;
+    }
+
+    const pages = [];
+    if (startPage > 1) {
+      pages.push(1);
+      if (startPage > 2) {
+        pages.push('...');
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        pages.push('...');
+      }
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+  // --- END: Truncated Pagination Logic ---
+
 
   return (
     <div className="allQuestionContainer attachedQuestionsContainer">
@@ -197,83 +254,101 @@ const AttachedQuestion = () => {
       {/* Show content (stats, questions, pagination) only when not loading and no error */}
       {!loading && !error && (
         <>
-          <div className="questionStats">
-            <p>Showing {currentQuestions.length} of {filteredQuestions.length} filtered questions (Total: {questions.length})</p>
-          </div>
+         {/* Show instruction if no fetch has happened and no filters are active */}
+         {!hasFetchedOnce && !isAnyFilterActive() && (
+           <p>Please select a filter to load questions.</p>
+         )}
 
-          {/* Check for "No questions found" after loading, filtering, and ensuring no error */}
-          {filteredQuestions.length === 0 ? (
-            <p>No questions found!</p>
-          ) : (
-            <div className="questionList attachedQuestionList">
-              <ol>
-                {currentQuestions.map((q) => (
-                  <li key={q.id} className="questionItem attachedQuestionItem">
-                    <strong>{isHTML(q.question) ? parse(q.question) : q.question}</strong> ({q.type})
-                    <div className="questionMeta">
-                      {q.grade && <span className="tag">Grade: {q.grade}</span>}
-                      {q.topic && <span className="tag">Topic: {q.topic}</span>}
-                      {q.topicList && <span className="tag">Subtopic: {q.topicList}</span>}
-                      {q.difficultyLevel && <span className="tag">Difficulty: {q.difficultyLevel}</span>}
-                    </div>
-                    {q.questionImage && (
-                      <div>
-                        <img
-                          src={q.questionImage}
-                          alt="Question Attachment"
-                          style={{ maxWidth: "300px", marginTop: "10px" }}
-                        />
-                      </div>
-                    )}
-                    {q.type === "MCQ" && Array.isArray(q.options) && (
-                      <ul>
-                        {q.options.map((option, index) => (
-                          <li key={index}>
-                            {option.text}
-                            {option.image && (
-                              <img
-                                src={option.image}
-                                alt={`Option ${index + 1}`}
-                                style={{ maxWidth: "100px", marginLeft: "10px" }}
-                              />
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {q.correctAnswer && (
-                      <p>
-                        <strong>Correct Answer:</strong> {q.correctAnswer.text}
-                        {q.correctAnswer.image && (
-                          <img
-                            src={q.correctAnswer.image}
-                            alt="Correct Answer"
-                            style={{ maxWidth: "100px", marginLeft: "10px" }}
-                          />
-                        )}
-                      </p>
-                    )}
-                    <div>
-                      <button className="addQuestionButton" onClick={() => handleAddToSet(q.id)}>
-                        {selectedSetName ? `Add question to ${selectedSetName}` : "Add to Set"}
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
+         {/* Show stats and questions only if data has been fetched */}
+         {hasFetchedOnce && (
+           <>
+             <div className="questionStats">
+               <p>Showing {currentQuestions.length} of {filteredQuestions.length} filtered questions (Total: {questions.length})</p>
+             </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
+             {/* Check for "No questions found" after loading, filtering, and ensuring no error */}
+             {filteredQuestions.length === 0 ? (
+               <p>No questions match the selected filters.</p> // More specific message
+             ) : (
+               <div className="questionList attachedQuestionList">
+                 <ol>
+                   {currentQuestions.map((q) => (
+                     <li key={q.id} className="questionItem attachedQuestionItem">
+                       <strong>{isHTML(q.question) ? parse(q.question) : q.question}</strong> ({q.type})
+                       <div className="questionMeta">
+                         {q.grade && <span className="tag">Grade: {q.grade}</span>}
+                         {q.topic && <span className="tag">Topic: {q.topic}</span>}
+                         {q.topicList && <span className="tag">Subtopic: {q.topicList}</span>}
+                         {q.difficultyLevel && <span className="tag">Difficulty: {q.difficultyLevel}</span>}
+                       </div>
+                       {q.questionImage && (
+                         <div>
+                           <img
+                             src={q.questionImage}
+                             alt="Question Attachment"
+                             style={{ maxWidth: "300px", marginTop: "10px" }}
+                           />
+                         </div>
+                       )}
+                       {q.type === "MCQ" && Array.isArray(q.options) && (
+                         <ul>
+                           {q.options.map((option, index) => (
+                             <li key={index}>
+                               {option.text}
+                               {option.image && (
+                                 <img
+                                   src={option.image}
+                                   alt={`Option ${index + 1}`}
+                                   style={{ maxWidth: "100px", marginLeft: "10px" }}
+                                 />
+                               )}
+                             </li>
+                           ))}
+                         </ul>
+                       )}
+                       {q.correctAnswer && (
+                         <p>
+                           <strong>Correct Answer:</strong> {q.correctAnswer.text}
+                           {q.correctAnswer.image && (
+                             <img
+                               src={q.correctAnswer.image}
+                               alt="Correct Answer"
+                               style={{ maxWidth: "100px", marginLeft: "10px" }}
+                             />
+                           )}
+                         </p>
+                       )}
+                       <div>
+                         <button className="addQuestionButton" onClick={() => handleAddToSet(q.id)}>
+                           {selectedSetName ? `Add question to ${selectedSetName}` : "Add to Set"}
+                         </button>
+                       </div>
+                     </li>
+                   ))}
+                 </ol>
+               </div>
+             )}
+           </>
+         )}
+
+          {/* Pagination - Truncated - Show only if data has been fetched and there are pages */}
+          {hasFetchedOnce && totalPages > 1 && (
             <div className="pagination">
-              {Array.from({ length: totalPages }).map((_, i) => (
+              {getVisiblePageNumbers(currentPage, totalPages, 10).map((pageNum, index) => (
                 <button
-                  key={i}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={currentPage === i + 1 ? "active" : ""}
+                  key={`${pageNum}-${index}`}
+                  onClick={() => typeof pageNum === 'number' && setCurrentPage(pageNum)}
+                  className={
+                    currentPage === pageNum
+                      ? "active"
+                      : typeof pageNum === 'number'
+                      ? ""
+                      : "ellipsis"
+                  }
+                  disabled={typeof pageNum !== 'number'}
+                  aria-label={typeof pageNum === 'number' ? `Go to page ${pageNum}` : `Page gap`}
                 >
-                  {i + 1}
+                  {pageNum}
                 </button>
               ))}
             </div>

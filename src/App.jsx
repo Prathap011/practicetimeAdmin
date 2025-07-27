@@ -14,6 +14,7 @@ import Upload from '../src/components/upload/upload';
 import AllUsers from '../src/components/allUsers/AllUsers';
 import Syllabus from './components/syllabus/Syllabus';
 import OfflineUsers from '../src/components/offlineUsers/OfflineUsers';
+import MultiQuestionPage from './components/attachedQuestions/MultiQuestionPage';
 
 const App = () => {
   const router = createBrowserRouter([
@@ -37,6 +38,10 @@ const App = () => {
     {
       path: "/attached-questions", // ✅ Add new route
       element: <><Navbar /><ProtectedRoute> <AttachedQuestion /></ProtectedRoute></>
+    },
+     {
+      path: "/multi-questions", // ✅ Add new route
+      element: <><Navbar /><ProtectedRoute> <MultiQuestionPage /></ProtectedRoute></>
     },
     {
       path: "/all-questions-set", // ✅ Add new route

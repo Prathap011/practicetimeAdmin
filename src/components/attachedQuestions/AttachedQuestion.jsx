@@ -5,8 +5,10 @@ import { ref, get, set } from "firebase/database";
 import { ToastContainer, toast } from "react-toastify";
 import parse from "html-react-parser";
 import DynamicMathSelector from "../DynamicMathSelector";
+import { useNavigate } from 'react-router-dom';
 
 const AttachedQuestion = () => {
+  const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [selectedSetName, setSelectedSetName] = useState("");
@@ -247,6 +249,12 @@ const AttachedQuestion = () => {
 
       {/* Content Area - Below Filters */}
       {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <div className="formGroup">
+            <button onClick={() => navigate("/multi-questions")}>
+              View Multi-Questions
+            </button>
+          </div>
 
       {/* Show loading message below filters */}
       {loading && <p>Loading questions...</p>}

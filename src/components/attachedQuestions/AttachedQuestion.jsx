@@ -17,32 +17,36 @@ const AttachedQuestion = () => {
   const [loading, setLoading] = useState(false); // Start with false, no initial load
   // State to track if the initial fetch attempt has been made
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+
   // Filter states - Grade initialized to "all"
   const [grade, setGrade] = useState("all");
   const [topic, setTopic] = useState("all");
   const [topicList, setTopicList] = useState("all");
   const [difficultyLevel, setDifficultyLevel] = useState("all");
   const [questionType, setQuestionType] = useState("all");
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 50;
 
+
   // Helper function to determine if any filter is actively selected
   const isAnyFilterActive = () => {
-    // Check if any filter is NOT "all" or ""
-    return (
-      (grade !== "all" && grade !== "") ||
-      (topic !== "all" && topic !== "") ||
-      (topicList !== "all" && topicList !== "") ||
-      (difficultyLevel !== "all" && difficultyLevel !== "") ||
-      (questionType !== "all" && questionType !== "")
-    );
-  };
+     // Check if any filter is NOT "all" or ""
+     return (
+       (grade !== "all" && grade !== "") ||
+       (topic !== "all" && topic !== "") ||
+       (topicList !== "all" && topicList !== "") ||
+       (difficultyLevel !== "all" && difficultyLevel !== "") ||
+       (questionType !== "all" && questionType !== "")
+     );
+   };
 
   // Function to fetch all questions
   const fetchAllQuestions = async () => {
     // Prevent multiple simultaneous fetches
     if (loading) return;
+
     setLoading(true);
     setError(null);
     try {
@@ -79,6 +83,7 @@ const AttachedQuestion = () => {
       fetchAllQuestions();
       return; // Exit effect, it will re-run after fetch updates state
     }
+
     // If data is loaded (or intentionally empty/errored after fetch) and not loading, apply filters
     if (hasFetchedOnce && !loading) {
       const filtered = questions.filter((q) => {
@@ -152,15 +157,18 @@ const AttachedQuestion = () => {
     if (totalPages <= maxVisible) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
+
     const halfVisible = Math.floor(maxVisible / 2);
     let startPage = Math.max(1, currentPage - halfVisible);
     let endPage = Math.min(totalPages, currentPage + halfVisible);
+
     if (currentPage <= halfVisible) {
       endPage = maxVisible;
     }
     if (currentPage + halfVisible >= totalPages) {
       startPage = totalPages - maxVisible + 1;
     }
+
     const pages = [];
     if (startPage > 1) {
       pages.push(1);
@@ -168,99 +176,21 @@ const AttachedQuestion = () => {
         pages.push('...');
       }
     }
+
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
+
     if (endPage < totalPages) {
       if (endPage < totalPages - 1) {
         pages.push('...');
       }
       pages.push(totalPages);
     }
+
     return pages;
   };
   // --- END: Truncated Pagination Logic ---
-
-  // --- START: Function to render questions with duplicate check ---
-  const renderQuestionsWithDuplicateCheck = (questionsToRender) => {
-    return questionsToRender.reduce((renderedItems, q, index, array) => {
-      // Determine the content used for comparison (text)
-      const currentQuestionText = q.question ? q.question.trim() : '';
-
-      // Get the text of the last question that was actually rendered (not just checked)
-      let lastRenderedQuestionText = '';
-      if (renderedItems.length > 0) {
-        // Access the question object stored on the last rendered <li> element
-        lastRenderedQuestionText = renderedItems[renderedItems.length - 1].props.questionText || '';
-      }
-
-      // Check if the current question text is the same as the last one rendered
-      const isDuplicateOfPrevious = currentQuestionText === lastRenderedQuestionText;
-
-      if (isDuplicateOfPrevious) {
-        // If duplicate, skip rendering this item
-        return renderedItems;
-      } else {
-        // If not a duplicate, render the <li> for this question
-        const questionItem = (
-          <li key={q.id} className="questionItem attachedQuestionItem" questionText={currentQuestionText}>
-            <strong>{isHTML(q.question) ? parse(q.question) : q.question}</strong> ({q.type})
-            <div className="questionMeta">
-              {q.grade && <span className="tag">Grade: {q.grade}</span>}
-              {q.topic && <span className="tag">Topic: {q.topic}</span>}
-              {q.topicList && <span className="tag">Subtopic: {q.topicList}</span>}
-              {q.difficultyLevel && <span className="tag">Difficulty: {q.difficultyLevel}</span>}
-            </div>
-            {q.questionImage && (
-              <div>
-                <img
-                  src={q.questionImage}
-                  alt="Question Attachment"
-                  style={{ maxWidth: "300px", marginTop: "10px" }}
-                />
-              </div>
-            )}
-            {q.type === "MCQ" && Array.isArray(q.options) && (
-              <ul>
-                {q.options.map((option, index) => (
-                  <li key={index}>
-                    {option.text}
-                    {option.image && (
-                      <img
-                        src={option.image}
-                        alt={`Option ${index + 1}`}
-                        style={{ maxWidth: "100px", marginLeft: "10px" }}
-                      />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {q.correctAnswer && (
-              <p>
-                <strong>Correct Answer:</strong> {q.correctAnswer.text}
-                {q.correctAnswer.image && (
-                  <img
-                    src={q.correctAnswer.image}
-                    alt="Correct Answer"
-                    style={{ maxWidth: "100px", marginLeft: "10px" }}
-                  />
-                )}
-              </p>
-            )}
-            <div>
-              <button className="addQuestionButton" onClick={() => handleAddToSet(q.id)}>
-                {selectedSetName ? `Add question to ${selectedSetName}` : "Add to Set"}
-              </button>
-            </div>
-          </li>
-        );
-        renderedItems.push(questionItem);
-        return renderedItems;
-      }
-    }, []); // Initialize with an empty array for rendered items
-  };
-  // --- END: Function to render questions with duplicate check ---
 
 
   return (
@@ -278,6 +208,7 @@ const AttachedQuestion = () => {
         {setNameError && <p style={{ color: "red" }}>{setNameError}</p>}
       </div>
       <hr />
+
       {/* Filter Controls - Always visible */}
       <div className="filterControls">
         <div className="horizontal-filters">
@@ -315,15 +246,19 @@ const AttachedQuestion = () => {
           </div>
         </div>
       </div>
+
       {/* Content Area - Below Filters */}
       {error && <p style={{ color: "red" }}>{error}</p>}
+
       <div className="formGroup">
             <button onClick={() => navigate("/multi-questions")}>
               View Multi-Questions
             </button>
           </div>
+
       {/* Show loading message below filters */}
       {loading && <p>Loading questions...</p>}
+
       {/* Show content (stats, questions, pagination) only when not loading and no error */}
       {!loading && !error && (
         <>
@@ -331,26 +266,79 @@ const AttachedQuestion = () => {
          {!hasFetchedOnce && !isAnyFilterActive() && (
            <p>Please select a filter to load questions.</p>
          )}
+
          {/* Show stats and questions only if data has been fetched */}
          {hasFetchedOnce && (
            <>
              <div className="questionStats">
-               <p>Showing {renderQuestionsWithDuplicateCheck(currentQuestions).length} of {filteredQuestions.length} filtered questions (Total: {questions.length})</p>
+               <p>Showing {currentQuestions.length} of {filteredQuestions.length} filtered questions (Total: {questions.length})</p>
              </div>
+
              {/* Check for "No questions found" after loading, filtering, and ensuring no error */}
              {filteredQuestions.length === 0 ? (
                <p>No questions match the selected filters.</p> // More specific message
              ) : (
                <div className="questionList attachedQuestionList">
                  <ol>
-                   {/* --- START: Use the new rendering function --- */}
-                   {renderQuestionsWithDuplicateCheck(currentQuestions)}
-                   {/* --- END: Use the new rendering function --- */}
+                   {currentQuestions.map((q) => (
+                     <li key={q.id} className="questionItem attachedQuestionItem">
+                       <strong>{isHTML(q.question) ? parse(q.question) : q.question}</strong> ({q.type})
+                       <div className="questionMeta">
+                         {q.grade && <span className="tag">Grade: {q.grade}</span>}
+                         {q.topic && <span className="tag">Topic: {q.topic}</span>}
+                         {q.topicList && <span className="tag">Subtopic: {q.topicList}</span>}
+                         {q.difficultyLevel && <span className="tag">Difficulty: {q.difficultyLevel}</span>}
+                       </div>
+                       {q.questionImage && (
+                         <div>
+                           <img
+                             src={q.questionImage}
+                             alt="Question Attachment"
+                             style={{ maxWidth: "300px", marginTop: "10px" }}
+                           />
+                         </div>
+                       )}
+                       {q.type === "MCQ" && Array.isArray(q.options) && (
+                         <ul>
+                           {q.options.map((option, index) => (
+                             <li key={index}>
+                               {option.text}
+                               {option.image && (
+                                 <img
+                                   src={option.image}
+                                   alt={`Option ${index + 1}`}
+                                   style={{ maxWidth: "100px", marginLeft: "10px" }}
+                                 />
+                               )}
+                             </li>
+                           ))}
+                         </ul>
+                       )}
+                       {q.correctAnswer && (
+                         <p>
+                           <strong>Correct Answer:</strong> {q.correctAnswer.text}
+                           {q.correctAnswer.image && (
+                             <img
+                               src={q.correctAnswer.image}
+                               alt="Correct Answer"
+                               style={{ maxWidth: "100px", marginLeft: "10px" }}
+                             />
+                           )}
+                         </p>
+                       )}
+                       <div>
+                         <button className="addQuestionButton" onClick={() => handleAddToSet(q.id)}>
+                           {selectedSetName ? `Add question to ${selectedSetName}` : "Add to Set"}
+                         </button>
+                       </div>
+                     </li>
+                   ))}
                  </ol>
                </div>
              )}
            </>
          )}
+
           {/* Pagination - Truncated - Show only if data has been fetched and there are pages */}
           {hasFetchedOnce && totalPages > 1 && (
             <div className="pagination">
@@ -375,6 +363,7 @@ const AttachedQuestion = () => {
           )}
         </>
       )}
+
       <ToastContainer />
     </div>
   );

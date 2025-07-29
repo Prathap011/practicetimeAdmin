@@ -6,6 +6,7 @@ const MATH_DATA = {
     { code: "G2", text: "Grade 2" },
     { code: "G3", text: "Grade 3" },
     { code: "G4", text: "Grade 4" },
+    { code: "G5", text: "Grade 5" },
   ],
   topics: [
     { grade: "G1", code: "G1A", text: "Number System" },

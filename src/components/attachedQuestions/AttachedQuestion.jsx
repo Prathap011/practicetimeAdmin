@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./AttachedQuestions.css";
 import { database } from "../firebase/FirebaseSetup";
-import { ref, get, set } from "firebase/database";
+import { ref, get, set, remove } from "firebase/database"; // Import 'remove'
 import { ToastContainer, toast } from "react-toastify";
 import parse from "html-react-parser";
 import DynamicMathSelector from "../DynamicMathSelector";
@@ -16,6 +16,7 @@ const AttachedQuestion = () => {
   const [setNameError, setSetNameError] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+  const [deleting, setDeleting] = useState(false); // State for deletion loading
 
   // Filter states - Grade initialized to "all"
   const [grade, setGrade] = useState("all");
@@ -23,7 +24,6 @@ const AttachedQuestion = () => {
   const [topicList, setTopicList] = useState("all");
   const [difficultyLevel, setDifficultyLevel] = useState("all");
   const [questionType, setQuestionType] = useState("all");
-  
   // --- NEW: Search state ---
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -31,7 +31,7 @@ const AttachedQuestion = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 50;
 
-  // Helper function to determine if any filter is actively selected
+  // Helper function to determine if any filter (including search) is actively selected
   const isAnyFilterActive = () => {
     return (
       (grade !== "all" && grade !== "") ||
@@ -39,7 +39,7 @@ const AttachedQuestion = () => {
       (topicList !== "all" && topicList !== "") ||
       (difficultyLevel !== "all" && difficultyLevel !== "") ||
       (questionType !== "all" && questionType !== "") ||
-      (searchTerm.trim() !== "") // --- NEW: Include search term ---
+      (searchTerm.trim() !== "") // Include search term
     );
   };
 
@@ -74,7 +74,7 @@ const AttachedQuestion = () => {
     }
   };
 
-  // Apply filters and potentially fetch data
+  // Apply filters and search
   useEffect(() => {
     if (!hasFetchedOnce && questions.length === 0 && isAnyFilterActive()) {
       fetchAllQuestions();
@@ -83,7 +83,7 @@ const AttachedQuestion = () => {
 
     if (hasFetchedOnce && !loading) {
       const filtered = questions.filter((q) => {
-        // --- EXISTING FILTER LOGIC ---
+        // Existing filter logic
         const matchesGrade = grade === "all" || grade === "" || q.grade === grade;
         const matchesTopic = topic === "all" || topic === "" || q.topic === topic;
         const matchesTopicList = topicList === "all" || topicList === "" || q.topicList === topicList;
@@ -94,8 +94,6 @@ const AttachedQuestion = () => {
         let matchesSearch = true; // Default to true if no search term
         if (searchTerm.trim() !== "") {
           const lowerSearchTerm = searchTerm.toLowerCase().trim();
-          
-          // Safely check each field, ensuring it's a string before calling toLowerCase
           matchesSearch =
             (q.question && typeof q.question === 'string' && q.question.toLowerCase().includes(lowerSearchTerm)) ||
             (q.grade && typeof q.grade === 'string' && q.grade.toLowerCase().includes(lowerSearchTerm)) ||
@@ -104,10 +102,10 @@ const AttachedQuestion = () => {
             (q.difficultyLevel && typeof q.difficultyLevel === 'string' && q.difficultyLevel.toLowerCase().includes(lowerSearchTerm)) ||
             (q.type && typeof q.type === 'string' && q.type.toLowerCase().includes(lowerSearchTerm)) ||
             (q.correctAnswer?.text && typeof q.correctAnswer.text === 'string' && q.correctAnswer.text.toLowerCase().includes(lowerSearchTerm));
-            
-          // Optionally search within MCQ options
+
+          // Search within MCQ options if not already matched
           if (!matchesSearch && q.type === "MCQ" && Array.isArray(q.options)) {
-             matchesSearch = q.options.some(option => 
+             matchesSearch = q.options.some(option =>
                 option.text && typeof option.text === 'string' && option.text.toLowerCase().includes(lowerSearchTerm)
              );
           }
@@ -156,6 +154,44 @@ const AttachedQuestion = () => {
     } catch (err) {
       console.error("❌ Error adding question to set:", err);
       setError("Failed to attach question to set.");
+    }
+  };
+
+  // --- NEW: Function to delete filtered questions ---
+  const handleDeleteFilteredQuestions = async () => {
+    if (filteredQuestions.length === 0) {
+        toast.info("No questions to delete.");
+        return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ALL ${filteredQuestions.length} filtered questions? This action cannot be undone.`
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    setDeleting(true);
+    setError(null);
+    try {
+      // Use Promise.all to delete all filtered questions concurrently
+      await Promise.all(
+        filteredQuestions.map(q =>
+          remove(ref(database, `questions/${q.id}`))
+        )
+      );
+      toast.success(`✅ Successfully deleted ${filteredQuestions.length} questions.`);
+      // Refresh the question list after deletion
+      await fetchAllQuestions();
+      // Reset filters/search if needed, or let the useEffect handle the new filtered list
+      // Optionally reset filters:
+      // setGrade("all"); setTopic("all"); setTopicList("all"); setDifficultyLevel("all"); setQuestionType("all"); setSearchTerm("");
+    } catch (err) {
+      console.error("❌ Error deleting questions:", err);
+      setError("Failed to delete questions.");
+      toast.error("❌ Failed to delete questions.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -216,7 +252,7 @@ const AttachedQuestion = () => {
         {setNameError && <p style={{ color: "red" }}>{setNameError}</p>}
       </div>
       <hr />
-      
+
       {/* Filter Controls - Always visible */}
       <div className="filterControls">
         {/* --- NEW: Search Input --- */}
@@ -231,7 +267,7 @@ const AttachedQuestion = () => {
             style={{ padding: '8px', width: '300px', marginLeft: '10px' }}
           />
         </div>
-        
+
         <div className="horizontal-filters">
           <DynamicMathSelector
             grade={grade}
@@ -265,9 +301,19 @@ const AttachedQuestion = () => {
               {["L1", "L2", "L3", "Br"].map((level) => <option key={level} value={level}>{level}</option>)}
             </select>
           </div>
+           {/* --- NEW: Delete Filtered Button --- */}
+          <div className="formGroup">
+            <button
+              onClick={handleDeleteFilteredQuestions}
+              disabled={deleting || !hasFetchedOnce || filteredQuestions.length === 0}
+              style={{ backgroundColor: '#d9534f', color: 'white', border: 'none', padding: '8px 12px', cursor: 'pointer' }}
+            >
+              {deleting ? 'Deleting...' : `Delete ${filteredQuestions.length} Filtered`}
+            </button>
+          </div>
         </div>
       </div>
-      
+
       {/* Content Area - Below Filters */}
       {error && <p style={{ color: "red" }}>{error}</p>}
       <div className="formGroup">
@@ -275,21 +321,22 @@ const AttachedQuestion = () => {
           View Multi-Questions
         </button>
       </div>
-      
+
       {loading && <p>Loading questions...</p>}
-      
-      {!loading && !error && (
+      {deleting && <p>Deleting questions...</p>} {/* Show deletion loading */}
+
+      {!loading && !error && !deleting && ( // Don't show content while deleting
         <>
          {!hasFetchedOnce && !isAnyFilterActive() && (
-           <p>Please select a filter or enter a search term to load questions.</p> 
+           <p>Please select a filter or enter a search term to load questions.</p>
          )}
-         
+
          {hasFetchedOnce && (
            <>
              <div className="questionStats">
                <p>Showing {currentQuestions.length} of {filteredQuestions.length} filtered questions (Total: {questions.length})</p>
              </div>
-             
+
              {filteredQuestions.length === 0 ? (
                <p>No questions match the selected filters or search term.</p>
              ) : (
@@ -353,7 +400,7 @@ const AttachedQuestion = () => {
              )}
            </>
          )}
-          
+
           {hasFetchedOnce && totalPages > 1 && (
             <div className="pagination">
               {getVisiblePageNumbers(currentPage, totalPages, 10).map((pageNum, index) => (

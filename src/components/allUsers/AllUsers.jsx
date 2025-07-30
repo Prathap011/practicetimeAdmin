@@ -99,6 +99,8 @@ const AllUsers = () => {
             const quizResultRef = ref(database, `users/${selectedUser.id}/quizResults/${quizId}`);
             const snapshot = await get(quizResultRef);
             if (snapshot.exists()) {
+                console.log(snapshot.val());
+                
                 setQuizDetails(snapshot.val());
             } else {
                 setQuizDetails(null);
@@ -364,7 +366,7 @@ const AllUsers = () => {
                                                                     )}
                                                                 </td>
                                                                 <td>{response.userAnswer}</td>
-                                                                <td>{response.correctAnswer.text}</td>
+                                                                <td>{response.correctAnswer?.text || 'N/A'}</td>
                                                                 <td
                                                                     style={{
                                                                         color: response.isCorrect

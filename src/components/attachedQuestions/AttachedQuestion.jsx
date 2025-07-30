@@ -14,8 +14,7 @@ const AttachedQuestion = () => {
   const [selectedSetName, setSelectedSetName] = useState("");
   const [error, setError] = useState(null);
   const [setNameError, setSetNameError] = useState("");
-  const [loading, setLoading] = useState(false); // Start with false, no initial load
-  // State to track if the initial fetch attempt has been made
+  const [loading, setLoading] = useState(false);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
   // Filter states - Grade initialized to "all"
@@ -24,29 +23,29 @@ const AttachedQuestion = () => {
   const [topicList, setTopicList] = useState("all");
   const [difficultyLevel, setDifficultyLevel] = useState("all");
   const [questionType, setQuestionType] = useState("all");
+  
+  // --- NEW: Search state ---
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 50;
 
-
   // Helper function to determine if any filter is actively selected
   const isAnyFilterActive = () => {
-     // Check if any filter is NOT "all" or ""
-     return (
-       (grade !== "all" && grade !== "") ||
-       (topic !== "all" && topic !== "") ||
-       (topicList !== "all" && topicList !== "") ||
-       (difficultyLevel !== "all" && difficultyLevel !== "") ||
-       (questionType !== "all" && questionType !== "")
-     );
-   };
+    return (
+      (grade !== "all" && grade !== "") ||
+      (topic !== "all" && topic !== "") ||
+      (topicList !== "all" && topicList !== "") ||
+      (difficultyLevel !== "all" && difficultyLevel !== "") ||
+      (questionType !== "all" && questionType !== "") ||
+      (searchTerm.trim() !== "") // --- NEW: Include search term ---
+    );
+  };
 
   // Function to fetch all questions
   const fetchAllQuestions = async () => {
-    // Prevent multiple simultaneous fetches
     if (loading) return;
-
     setLoading(true);
     setError(null);
     try {
@@ -54,7 +53,7 @@ const AttachedQuestion = () => {
       const snapshot = await get(questionsRef);
       if (!snapshot.exists()) {
         setError("No questions found!");
-        setQuestions([]); // Ensure questions array is cleared
+        setQuestions([]);
         return;
       }
       const data = snapshot.val();
@@ -64,13 +63,12 @@ const AttachedQuestion = () => {
       }));
       allFetchedQuestions.reverse();
       setQuestions(allFetchedQuestions);
-      // Success, mark that we've fetched
       setHasFetchedOnce(true);
     } catch (err) {
       console.error("Error fetching questions:", err);
       setError("Failed to fetch questions");
-      setQuestions([]); // Ensure questions array is cleared on error
-      setHasFetchedOnce(true); // Mark as fetched even on error to prevent retries
+      setQuestions([]);
+      setHasFetchedOnce(true);
     } finally {
       setLoading(false);
     }
@@ -78,28 +76,49 @@ const AttachedQuestion = () => {
 
   // Apply filters and potentially fetch data
   useEffect(() => {
-    // If data hasn't been fetched yet AND at least one filter is active, fetch it
     if (!hasFetchedOnce && questions.length === 0 && isAnyFilterActive()) {
       fetchAllQuestions();
-      return; // Exit effect, it will re-run after fetch updates state
+      return;
     }
 
-    // If data is loaded (or intentionally empty/errored after fetch) and not loading, apply filters
     if (hasFetchedOnce && !loading) {
       const filtered = questions.filter((q) => {
-        // --- CORRECTED FILTER LOGIC ---
+        // --- EXISTING FILTER LOGIC ---
         const matchesGrade = grade === "all" || grade === "" || q.grade === grade;
         const matchesTopic = topic === "all" || topic === "" || q.topic === topic;
         const matchesTopicList = topicList === "all" || topicList === "" || q.topicList === topicList;
         const matchesDifficulty = difficultyLevel === "all" || difficultyLevel === "" || q.difficultyLevel === difficultyLevel;
         const matchesType = questionType === "all" || questionType === "" || q.type === questionType;
-        // --- END CORRECTION ---
-        return matchesGrade && matchesTopic && matchesTopicList && matchesDifficulty && matchesType;
+
+        // --- NEW: Search Logic (with type safety) ---
+        let matchesSearch = true; // Default to true if no search term
+        if (searchTerm.trim() !== "") {
+          const lowerSearchTerm = searchTerm.toLowerCase().trim();
+          
+          // Safely check each field, ensuring it's a string before calling toLowerCase
+          matchesSearch =
+            (q.question && typeof q.question === 'string' && q.question.toLowerCase().includes(lowerSearchTerm)) ||
+            (q.grade && typeof q.grade === 'string' && q.grade.toLowerCase().includes(lowerSearchTerm)) ||
+            (q.topic && typeof q.topic === 'string' && q.topic.toLowerCase().includes(lowerSearchTerm)) ||
+            (q.topicList && typeof q.topicList === 'string' && q.topicList.toLowerCase().includes(lowerSearchTerm)) ||
+            (q.difficultyLevel && typeof q.difficultyLevel === 'string' && q.difficultyLevel.toLowerCase().includes(lowerSearchTerm)) ||
+            (q.type && typeof q.type === 'string' && q.type.toLowerCase().includes(lowerSearchTerm)) ||
+            (q.correctAnswer?.text && typeof q.correctAnswer.text === 'string' && q.correctAnswer.text.toLowerCase().includes(lowerSearchTerm));
+            
+          // Optionally search within MCQ options
+          if (!matchesSearch && q.type === "MCQ" && Array.isArray(q.options)) {
+             matchesSearch = q.options.some(option => 
+                option.text && typeof option.text === 'string' && option.text.toLowerCase().includes(lowerSearchTerm)
+             );
+          }
+        }
+
+        return matchesGrade && matchesTopic && matchesTopicList && matchesDifficulty && matchesType && matchesSearch;
       });
       setFilteredQuestions(filtered);
-      setCurrentPage(1); // Reset to page 1 on new filter
+      setCurrentPage(1);
     }
-  }, [questions, grade, topic, topicList, difficultyLevel, questionType, loading, hasFetchedOnce]); // Dependencies
+  }, [questions, grade, topic, topicList, difficultyLevel, questionType, searchTerm, loading, hasFetchedOnce]);
 
   const handleAddToSet = async (questionId) => {
     if (!selectedSetName.trim()) {
@@ -140,7 +159,6 @@ const AttachedQuestion = () => {
     }
   };
 
-  // Function to check if a string contains HTML tags
   const isHTML = (str) => {
     return /<[^>]+>/.test(str);
   };
@@ -151,24 +169,19 @@ const AttachedQuestion = () => {
   const currentQuestions = filteredQuestions.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
 
-  // --- START: Truncated Pagination Logic ---
-  // Helper function for pagination truncation
   const getVisiblePageNumbers = (currentPage, totalPages, maxVisible = 10) => {
     if (totalPages <= maxVisible) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-
     const halfVisible = Math.floor(maxVisible / 2);
     let startPage = Math.max(1, currentPage - halfVisible);
     let endPage = Math.min(totalPages, currentPage + halfVisible);
-
     if (currentPage <= halfVisible) {
       endPage = maxVisible;
     }
     if (currentPage + halfVisible >= totalPages) {
       startPage = totalPages - maxVisible + 1;
     }
-
     const pages = [];
     if (startPage > 1) {
       pages.push(1);
@@ -176,22 +189,17 @@ const AttachedQuestion = () => {
         pages.push('...');
       }
     }
-
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
-
     if (endPage < totalPages) {
       if (endPage < totalPages - 1) {
         pages.push('...');
       }
       pages.push(totalPages);
     }
-
     return pages;
   };
-  // --- END: Truncated Pagination Logic ---
-
 
   return (
     <div className="allQuestionContainer attachedQuestionsContainer">
@@ -208,9 +216,22 @@ const AttachedQuestion = () => {
         {setNameError && <p style={{ color: "red" }}>{setNameError}</p>}
       </div>
       <hr />
-
+      
       {/* Filter Controls - Always visible */}
       <div className="filterControls">
+        {/* --- NEW: Search Input --- */}
+        <div className="formGroup" style={{ marginBottom: '15px' }}>
+          <label htmlFor="searchFilter">Search Questions:</label>
+          <input
+            type="text"
+            id="searchFilter"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by question text, grade, topic, etc."
+            style={{ padding: '8px', width: '300px', marginLeft: '10px' }}
+          />
+        </div>
+        
         <div className="horizontal-filters">
           <DynamicMathSelector
             grade={grade}
@@ -246,37 +267,31 @@ const AttachedQuestion = () => {
           </div>
         </div>
       </div>
-
+      
       {/* Content Area - Below Filters */}
       {error && <p style={{ color: "red" }}>{error}</p>}
-
       <div className="formGroup">
-            <button onClick={() => navigate("/multi-questions")}>
-              View Multi-Questions
-            </button>
-          </div>
-
-      {/* Show loading message below filters */}
+        <button onClick={() => navigate("/multi-questions")}>
+          View Multi-Questions
+        </button>
+      </div>
+      
       {loading && <p>Loading questions...</p>}
-
-      {/* Show content (stats, questions, pagination) only when not loading and no error */}
+      
       {!loading && !error && (
         <>
-         {/* Show instruction if no fetch has happened and no filters are active */}
          {!hasFetchedOnce && !isAnyFilterActive() && (
-           <p>Please select a filter to load questions.</p>
+           <p>Please select a filter or enter a search term to load questions.</p> 
          )}
-
-         {/* Show stats and questions only if data has been fetched */}
+         
          {hasFetchedOnce && (
            <>
              <div className="questionStats">
                <p>Showing {currentQuestions.length} of {filteredQuestions.length} filtered questions (Total: {questions.length})</p>
              </div>
-
-             {/* Check for "No questions found" after loading, filtering, and ensuring no error */}
+             
              {filteredQuestions.length === 0 ? (
-               <p>No questions match the selected filters.</p> // More specific message
+               <p>No questions match the selected filters or search term.</p>
              ) : (
                <div className="questionList attachedQuestionList">
                  <ol>
@@ -338,8 +353,7 @@ const AttachedQuestion = () => {
              )}
            </>
          )}
-
-          {/* Pagination - Truncated - Show only if data has been fetched and there are pages */}
+          
           {hasFetchedOnce && totalPages > 1 && (
             <div className="pagination">
               {getVisiblePageNumbers(currentPage, totalPages, 10).map((pageNum, index) => (
@@ -363,7 +377,6 @@ const AttachedQuestion = () => {
           )}
         </>
       )}
-
       <ToastContainer />
     </div>
   );

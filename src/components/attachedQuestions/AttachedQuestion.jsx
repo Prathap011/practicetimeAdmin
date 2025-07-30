@@ -159,41 +159,42 @@ const AttachedQuestion = () => {
 
   // --- NEW: Function to delete filtered questions ---
   const handleDeleteFilteredQuestions = async () => {
-    if (filteredQuestions.length === 0) {
-        toast.info("No questions to delete.");
-        return;
-    }
+  if (filteredQuestions.length <= 1) {
+    toast.info("Not enough questions to delete — at least one will remain.");
+    return;
+  }
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete ALL ${filteredQuestions.length} filtered questions? This action cannot be undone.`
+  const confirmDelete = window.confirm(
+    `Are you sure you want to delete ${filteredQuestions.length - 1} filtered questions? One will remain.`
+  );
+  if (!confirmDelete) {
+    return;
+  }
+
+  setDeleting(true);
+  setError(null);
+
+  try {
+    // Keep the first question, delete the rest
+    const questionsToDelete = filteredQuestions.slice(1);
+
+    await Promise.all(
+      questionsToDelete.map(q =>
+        remove(ref(database, `questions/${q.id}`))
+      )
     );
-    if (!confirmDelete) {
-      return;
-    }
 
-    setDeleting(true);
-    setError(null);
-    try {
-      // Use Promise.all to delete all filtered questions concurrently
-      await Promise.all(
-        filteredQuestions.map(q =>
-          remove(ref(database, `questions/${q.id}`))
-        )
-      );
-      toast.success(`✅ Successfully deleted ${filteredQuestions.length} questions.`);
-      // Refresh the question list after deletion
-      await fetchAllQuestions();
-      // Reset filters/search if needed, or let the useEffect handle the new filtered list
-      // Optionally reset filters:
-      // setGrade("all"); setTopic("all"); setTopicList("all"); setDifficultyLevel("all"); setQuestionType("all"); setSearchTerm("");
-    } catch (err) {
-      console.error("❌ Error deleting questions:", err);
-      setError("Failed to delete questions.");
-      toast.error("❌ Failed to delete questions.");
-    } finally {
-      setDeleting(false);
-    }
-  };
+    toast.success(`✅ Successfully deleted ${questionsToDelete.length} questions (1 kept).`);
+    await fetchAllQuestions();
+  } catch (err) {
+    console.error("❌ Error deleting questions:", err);
+    setError("Failed to delete questions.");
+    toast.error("❌ Failed to delete questions.");
+  } finally {
+    setDeleting(false);
+  }
+};
+
 
   const isHTML = (str) => {
     return /<[^>]+>/.test(str);

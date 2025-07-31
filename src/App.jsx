@@ -1,74 +1,161 @@
-import { useState } from 'react'
-import React from 'react'
-import Login from './components/login/login'
-import { BrowserRouter as Router, Routes, Route, createBrowserRouter, RouterProvider } from 'react-router-dom';
-import Home from './components/home/Home'
+// src/App.jsx
+import React from 'react';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+
+// ✅ Toastify
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// ✅ Component imports
+import Login from './components/login/login';
+import Home from './components/home/Home';
 import ProtectedRoute from './components/route/ProtectedRoute';
 import Navbar from './components/navbar/Navbar';
-import "./App.css"
 import AllQuestions from './components/questions/AllQuestions';
 import AttachedQuestion from './components/attachedQuestions/AttachedQuestion';
-
 import AllQuestionsSet from './components/allQuestionsSet/AllQuestionsSet';
-import Upload from '../src/components/upload/upload';
-import AllUsers from '../src/components/allUsers/AllUsers';
+import Upload from './components/upload/upload';
+import AllUsers from './components/allUsers/AllUsers';
 import Syllabus from './components/syllabus/Syllabus';
-import OfflineUsers from '../src/components/offlineUsers/OfflineUsers';
-import MultiQuestionPage from './components/attachedQuestions/MultiQuestionPage';
+import OfflineUsers from './components/offlineUsers/OfflineUsers';
+import UploadMultiQuestion from './components/multiQ/UploadMultiQuestion';
+import AdminStats from './components/AdminStats';
+import WorksheetGenManual from './components/worksheetManual/WorksheetGenManual';
+import WorksheetGenSystem from './components/worksheetSystem/WorksheetGenSystem';
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Login />,
+  },
+  {
+    path: "/home",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <Home />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/worksheet-gen-manual",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <WorksheetGenManual />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/worksheet-gen-system",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <WorksheetGenSystem />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/all-questions",
+    element: (
+      <>
+        <Navbar />
+        <AllQuestions />
+      </>
+    ),
+  },
+  {
+    path: "/attached-questions",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <AttachedQuestion />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/all-questions-set",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <AllQuestionsSet />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/upload",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <Upload />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/upload-multi",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <UploadMultiQuestion />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/allUsers",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <AllUsers />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/offlineUsers",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <OfflineUsers />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+  {
+    path: "/admin-stats",
+    element: (
+      <>
+        <Navbar />
+        <ProtectedRoute>
+          <AdminStats />
+        </ProtectedRoute>
+      </>
+    ),
+  },
+]);
 
 const App = () => {
-  const router = createBrowserRouter([
-    {
-      path: "/",
-      element: <Login />
-    },
-    {
-      path: "/home",
-      element: <><Navbar /><ProtectedRoute> <Home /></ProtectedRoute></>
-    }, {
-
-      path: "/all-questions", // ✅ Add new route
-      element: (
-        <>
-          <Navbar />
-          <AllQuestions />
-        </>
-      ),
-    },
-    {
-      path: "/attached-questions", // ✅ Add new route
-      element: <><Navbar /><ProtectedRoute> <AttachedQuestion /></ProtectedRoute></>
-    },
-     {
-      path: "/multi-questions", // ✅ Add new route
-      element: <><Navbar /><ProtectedRoute> <MultiQuestionPage /></ProtectedRoute></>
-    },
-    {
-      path: "/all-questions-set", // ✅ Add new route
-      element: <><Navbar /><ProtectedRoute> <AllQuestionsSet /></ProtectedRoute></>
-    },
-    {
-      path: "/upload", // ✅ Add new route
-      element: <><Navbar /><ProtectedRoute> <Upload /></ProtectedRoute></>
-    }
-    ,
-    {
-      path: "/allUsers", // ✅ Add new route
-      element: <><Navbar /><ProtectedRoute> <AllUsers/></ProtectedRoute></>
-    },
-    {
-      path: "/offlineUsers", // ✅ Add new route
-      element: <><Navbar /><ProtectedRoute> <OfflineUsers/></ProtectedRoute></>
-    }
-
-  ])
   return (
-
     <>
-
       <RouterProvider router={router} />
+      <ToastContainer position="top-right" autoClose={2500} pauseOnHover />
     </>
-  )
-}
+  );
+};
 
-export default App
+export default App;

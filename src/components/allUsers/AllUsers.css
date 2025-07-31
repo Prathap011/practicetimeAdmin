@@ -12,6 +12,70 @@
   justify-content: flex-start;
 }
 
+.user-email-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-email-text {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* Existing Report Button Styling */
+.report-button {
+  background-color: #007bff; /* Blue */
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.report-button:hover {
+  background-color: #28a745; /* Green */
+}
+
+
+.excel-download-btn {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  margin: 20px 0;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.excel-download-btn:hover {
+  background-color: #28a745;
+}
+
+.excel-download-btn {
+  background-color: #007bff; /* Blue */
+  color: white;
+  padding: 10px 20px;
+  margin: 15px 0; /* ✅ Adds space above and below */
+  border: none;
+  border-radius: 50px; /* Rounded pill */
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.excel-download-btn:hover {
+  background-color: #28a745; /* Green */
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+}
+
 /* Highlighted "User Management" title */
 .page-title {
   display: inline-block;
@@ -213,7 +277,7 @@
 }
 
 /* Delete Button */
-.delete-button {
+.delete-button1 {
   background-color: #ff4d4d;
   color: white;
   border: none;
@@ -224,8 +288,8 @@
   transition: background-color 0.2s ease;
 }
 
-.delete-button:hover {
-  background-color: #cc0000;
+.delete-button1:hover {
+    background-color: #19bb2f;
 }
 
 /* Quiz Result Summary */

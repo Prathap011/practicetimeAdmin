@@ -456,36 +456,87 @@ const AllQuestionsSet = () => {
 
       addHeader();
 
-      for (let item of questionItems) {
-        // 🔒 Hide elements marked as noPrint (like delete buttons)
-        const noPrintElements = item.querySelectorAll(".noPrint");
-        noPrintElements.forEach(el => (el.style.display = "none"));
+      for (let itemIndex = 0; itemIndex < questionItems.length; itemIndex++) {
+  const item = questionItems[itemIndex];
 
-        const canvas = await html2canvas(item, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-        });
+  // Hide elements marked as noPrint
+  const noPrintElements = item.querySelectorAll(".noPrint");
+  noPrintElements.forEach(el => (el.style.display = "none"));
 
-        // ✅ Restore them after snapshot
-        noPrintElements.forEach(el => (el.style.display = ""));
+  const canvas = await html2canvas(item, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff",
+  });
 
+  noPrintElements.forEach(el => (el.style.display = ""));
 
+  const imgData = canvas.toDataURL("image/jpeg", 0.9);
+  const imgProps = pdf.getImageProperties(imgData);
+  const imgWidth = pdfWidth - 2 * margin;
+  const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.9);
-        const imgProps = pdf.getImageProperties(imgData);
-        const imgWidth = pdfWidth - 2 * margin;
-        const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+  const extraBottomSpace = 15; // margin before footer
+  const availablePageHeight = pdfHeight - headerHeight - footerHeight - extraBottomSpace;
 
-        if (currentY + imgHeight > pdfHeight - footerHeight) {
-          pdf.addPage();
-          currentPage++;
-          addHeader();
-        }
+  if (imgHeight > availablePageHeight) {
+    // Split into chunks
+    let remainingHeight = imgHeight;
+    let yOffset = 0;
 
-        pdf.addImage(imgData, "JPEG", margin, currentY, imgWidth, imgHeight);
-        currentY += imgHeight + 5;
+    while (remainingHeight > 0) {
+      const sliceHeight = Math.min(availablePageHeight - (currentY - headerHeight), remainingHeight);
+
+      // Create temp slice canvas
+      const sliceCanvas = document.createElement("canvas");
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = (sliceHeight * canvas.width) / imgWidth;
+
+      const sliceCtx = sliceCanvas.getContext("2d");
+      sliceCtx.drawImage(
+        canvas,
+        0, yOffset * (canvas.width / imgWidth),
+        canvas.width, sliceCanvas.height,
+        0, 0,
+        sliceCanvas.width, sliceCanvas.height
+      );
+
+      const sliceImgData = sliceCanvas.toDataURL("image/jpeg", 0.9);
+
+      if (currentY + sliceHeight > pdfHeight - footerHeight - extraBottomSpace) {
+        pdf.addPage();
+        addHeader();
       }
+
+      pdf.addImage(sliceImgData, "JPEG", margin, currentY, imgWidth, sliceHeight);
+      currentY += sliceHeight + 5;
+
+      remainingHeight -= sliceHeight;
+      yOffset += sliceHeight;
+
+      if (remainingHeight > 0 && currentY > pdfHeight - footerHeight - extraBottomSpace) {
+        pdf.addPage();
+        addHeader();
+      }
+    }
+  } else {
+    // Fits on one page
+    if (currentY + imgHeight > pdfHeight - footerHeight - extraBottomSpace) {
+      pdf.addPage();
+      addHeader();
+    }
+    pdf.addImage(imgData, "JPEG", margin, currentY, imgWidth, imgHeight);
+    currentY += imgHeight + 5;
+  }
+
+  // ✅ After a question is fully placed, check remaining space
+  const remainingSpace = pdfHeight - footerHeight - currentY;
+  if (remainingSpace <= 50 && itemIndex < questionItems.length - 1) {
+    pdf.addPage();
+    addHeader();
+  }
+}
+
 
       pdf.save(`${selectedSet}.pdf`);
     } catch (error) {
